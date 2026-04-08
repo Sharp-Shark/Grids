@@ -115,11 +115,11 @@ public class Main implements ApplicationListener {
                 } else if (Gdx.input.isKeyPressed(Input.Keys.X)) {
                     grid.setTileHealth(index, grid.tiles[index].health - dt * damage);
                 } else if (Gdx.input.isKeyPressed(Input.Keys.C)) {
-                    grid.tiles[index].setPrefab(TilePrefab.empty, false);
+                    grid.tiles[index].setPrefab(TilePrefab.empty, true);
                 } else if (Gdx.input.isKeyPressed(Input.Keys.V)) {
-                    grid.tiles[index].setPrefab(TilePrefab.solid, false);
+                    grid.tiles[index].setPrefab(TilePrefab.solid, true);
                 } else if (Gdx.input.isKeyPressed(Input.Keys.B)) {
-                    grid.tiles[index].setPrefab(TilePrefab.background, false);
+                    grid.tiles[index].setPrefab(TilePrefab.background, true);
                 }
             }
         }
@@ -148,7 +148,7 @@ public class Main implements ApplicationListener {
         gridManager.draw(sb, squareSprite, font);
 
         font.getData().setScale(0.04f);
-        font.draw(sb, "Controls: [W][A][S][D] [Z][X] [C][V][B] [LMB] [RMB]", -6f, -1f);
+        font.draw(sb, "Controls: [Q][E] [W][A][S][D] [Z][X] [C][V][B] [LMB] [RMB] [Arrows]", -6f, -1f);
 
         sb.end();
     }

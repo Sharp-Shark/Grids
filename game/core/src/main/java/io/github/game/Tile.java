@@ -26,6 +26,8 @@ public class Tile {
         this.prefab = newPrefab;
         if (revive) {
             this.setHealth(newPrefab.maxHealth);
+        } else {
+            this.setHealth(health);
         }
     }
 
