@@ -3,6 +3,14 @@ package io.github.game;
 import com.badlogic.gdx.graphics.Color;
 
 public class TilePrefab {
+    final static TilePrefab earth = new TilePrefab(
+        0f,
+        1f,
+        1f,
+        false,
+        Color.BROWN,
+        false
+    );
     final static TilePrefab solid = new TilePrefab(
         0f,
         1f,

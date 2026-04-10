@@ -1,5 +1,6 @@
 package io.github.game;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -10,28 +11,42 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
 public class GridManager {
     ArrayList<Grid> grids;
+    ArrayDeque<Grid> newGridQueue;
 
     public GridManager () {
         grids = new ArrayList<Grid>();
+        newGridQueue = new ArrayDeque<Grid>();
     }
 
     public Grid addGrid (Vector2 pos, int width, int height) {
         Grid grid = new Grid(width, height, this);
         grid.pos = pos;
-        grids.add(grid);
+        newGridQueue.add(grid);
         return grid;
     }
 
-    public void update (float dt) {
-        for (Grid grid : grids) {
-            if(grid.removed) {
-                System.out.println("this guy SHOULD be removed but I have not written the remove code yet =)");
+    public void removeGrids () {
+        int index = 0;
+        Grid grid;
+        while (index < grids.size()) {
+            grid = grids.get(index);
+            if (grid.removed) {
+                grids.remove(index);
+            } else {
+                index += 1;
             }
         }
+    }
+
+    public void update (float dt) {
+        removeGrids();
         for (Grid grid : grids) {
-            if(grid.removed) continue;
+            if (grid.removed) continue;
             
             grid.update(dt, grids);
+        }
+        while (newGridQueue.size() > 0) {
+            grids.add(newGridQueue.pop());
         }
     }
 

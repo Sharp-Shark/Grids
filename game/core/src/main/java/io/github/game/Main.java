@@ -40,9 +40,13 @@ public class Main implements ApplicationListener {
         
         gridManager = new GridManager();
         gridManager.addGrid(new Vector2(0, 0), 8, 8).fill(TilePrefab.solid);
-        gridManager.addGrid(new Vector2(5, 0), 16, 16).fill(TilePrefab.solid);
         gridManager.addGrid(new Vector2(-9, 0), 8, 8).fill(TilePrefab.solid);
         gridManager.addGrid(new Vector2(-20, 0), 8, 8).fill(TilePrefab.solid);
+
+        Grid world = gridManager.addGrid(new Vector2(-128, -128), 512, 256);
+        world.fill(TilePrefab.earth);
+        world.atomic = true;
+        world.immobile = true;
     }
 
     @Override
@@ -115,11 +119,11 @@ public class Main implements ApplicationListener {
                 } else if (Gdx.input.isKeyPressed(Input.Keys.X)) {
                     grid.setTileHealth(index, grid.tiles[index].health - dt * damage);
                 } else if (Gdx.input.isKeyPressed(Input.Keys.C)) {
-                    grid.tiles[index].setPrefab(TilePrefab.empty, true);
+                    grid.setTilePrefab(index, TilePrefab.empty, true);
                 } else if (Gdx.input.isKeyPressed(Input.Keys.V)) {
-                    grid.tiles[index].setPrefab(TilePrefab.solid, true);
+                    grid.setTilePrefab(index, TilePrefab.solid, true);
                 } else if (Gdx.input.isKeyPressed(Input.Keys.B)) {
-                    grid.tiles[index].setPrefab(TilePrefab.background, true);
+                    grid.setTilePrefab(index, TilePrefab.background, true);
                 }
             }
         }
@@ -129,6 +133,8 @@ public class Main implements ApplicationListener {
     
     private void update (float dt) {
         gridManager.update(dt);
+
+        if (selectedIndex != -1 && gridManager.grids.get(selectedIndex).removed) { selectedIndex = -1; }
     }
 
     private void draw (SpriteBatch sb) {
