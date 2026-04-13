@@ -17,6 +17,8 @@ public class Tile {
         this.grid = grid;
         this.prefab = prefab;
         this.health = prefab.maxHealth;
+
+        grid.mass += this.getMass();
     }
 
     public void setPrefab (TilePrefab newPrefab, boolean revive) {

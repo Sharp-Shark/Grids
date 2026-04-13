@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
 public class GridManager {
@@ -43,19 +44,19 @@ public class GridManager {
         for (Grid grid : grids) {
             if (grid.removed) continue;
             
-            grid.update(dt, grids);
+            grid.update(dt);
         }
         while (newGridQueue.size() > 0) {
             grids.add(newGridQueue.pop());
         }
     }
 
-	public void draw (SpriteBatch sb, Sprite sprite, BitmapFont font) {
+	public void draw (SpriteBatch sb, Sprite sprite, BitmapFont font, Viewport viewport) {
         for (Grid grid : grids) {
-            grid.drawBack(sb, sprite, font);
+            grid.draw(sb, sprite, font, viewport, true);
         }
         for (Grid grid : grids) {
-            grid.drawFront(sb, sprite, font);
+            grid.draw(sb, sprite, font, viewport, false);
         }
     }
 }

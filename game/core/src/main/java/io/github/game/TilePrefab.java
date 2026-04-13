@@ -1,17 +1,22 @@
 package io.github.game;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import com.badlogic.gdx.graphics.Color;
 
 public class TilePrefab {
-    final static TilePrefab earth = new TilePrefab(
+    final static TilePrefab empty = new TilePrefab(
+        "empty",
         0f,
-        1f,
-        1f,
-        false,
-        Color.BROWN,
-        false
+        0f,
+        0f,
+        true,
+        Color.RED,
+        true
     );
     final static TilePrefab solid = new TilePrefab(
+        "solid",
         0f,
         1f,
         1f,
@@ -20,6 +25,7 @@ public class TilePrefab {
         false
     );
     final static TilePrefab background = new TilePrefab(
+        "background",
         0f,
         1f,
         0f,
@@ -27,15 +33,19 @@ public class TilePrefab {
         Color.BLUE,
         false
     );
-    final static TilePrefab empty = new TilePrefab(
+    final static TilePrefab earth = new TilePrefab(
+        "earth",
         0f,
-        0f,
-        0f,
-        true,
-        Color.RED,
-        true
+        1f,
+        1f,
+        false,
+        Color.BROWN,
+        false
     );
+    static ArrayList<TilePrefab> tilePrefabList;
+    static HashMap<String, TilePrefab> tilePrefabMap;
 
+    String identifier;
     float minHealth;
     float maxHealth;
     float mass;
@@ -43,12 +53,18 @@ public class TilePrefab {
     Color color;
     boolean noDraw;
 
-    public TilePrefab (float minHealth, float maxHealth, float mass, boolean noCollision, Color color, boolean noDraw) {
+    public TilePrefab (String identifier, float minHealth, float maxHealth, float mass, boolean noCollision, Color color, boolean noDraw) {
+        this.identifier = identifier;
         this.minHealth = minHealth;
         this.maxHealth = maxHealth;
         this.mass = mass;
         this.noCollision = noCollision;
         this.color = color;
         this.noDraw = noDraw;
+
+        if (tilePrefabList == null) { tilePrefabList = new ArrayList<TilePrefab>(); }
+        if (tilePrefabMap == null) { tilePrefabMap = new HashMap<String, TilePrefab>(); }
+        tilePrefabList.add(this);
+        tilePrefabMap.put(identifier, this);
     }
 }

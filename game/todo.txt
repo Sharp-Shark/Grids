@@ -1,0 +1,21 @@
+I wonder what is a good algorithm for finding the effective size of a grid
+is peeling it back like an onion the best there is to do?
+or maybe I could track all the outer tiles of the grid
+oh yeah that's probably what I should do
+maintain 4(?) arrays for the top row, bottom row, right column and left column and as tiles are broken or revived, if they are the external ones it'll update that
+and whenever one gets emptied it'll shrink in the proper direction
+
+it'll probably be a pain in the ass cuz whenever it splits I'll have to account for that
+cuz unless I intend on making it inefficient, I'll need to have it transfer the outer row/column
+although it will still need to occasionally to the inefficient way for when it can't possibly inherit
+like for when the grid gains a new side due to the cut, that new side couldn't possibly inherit the outer row/column data
+
+on a different note, for the split() method I should make the floodfill phase track how many queued tiles each region has (this count should be merged whenever two regions are consolidated) and as soon as there is only 1 region left, the floodfill phase is ended early
+because if all the regions haven't merged yet but there is only 1 region active, then all the others don't have any more connected unsearched tiles and therefore the active region has no way to find them (and is also probably the biggest region? If this isn't guaranteed, it may cause problems with tiles getting deleted or not properly transferred)
+the one other issue with this optimization is it would mess up how the size is determined for the resizing. This optimization would probably cause it to underestimate the size
+
+also I should later add chunks to the grids. Or maybe not, maybe it'd be more efficient to just split up really large grids into smaller grids cuz I think the only really big grids would probably be stuff like the world itself, which is static, and thus splitting it wouldn't impact the physics or anything like that. This *would* have the downside of increasing the amount of grids though... so maybe grids are good indead lol
+
+I should make a function that generates a vertexes list that corresponds to the corners of all the tiles of a grid (minus the repeated corners). This would be useful for stuff like explosions and collision detection for non-grid entities larger than 1 tile (and smaller too!) (in case of doubt see "game/todo1.png")
+this function SHOULD take the possibility into account that the rectangle size isn't a nice multiple of the tileSize. For that it'll just "round upwards" and have 1 extra row/column of vertices that isn't as spaced out as the rest
+oh yeah and obv I should make a function for the grid that does collision checks using that list of vertexes, but honestly that'd be trivial in comparison to some of the other stuff written here
