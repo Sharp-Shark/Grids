@@ -1,5 +1,7 @@
 package io.github.game;
 
+import java.util.Vector;
+
 import org.w3c.dom.css.Rect;
 
 import com.badlogic.gdx.ApplicationListener;
@@ -31,18 +33,15 @@ public class Main implements ApplicationListener {
     int selectedIndex = -1;
     int frame = 0;
 
-    // for debugging performance
-	static public void logTime (long start, String text) {
-		final float e6 = 1_000_000;
-		System.out.println(text.concat(String.valueOf((System.nanoTime()- start) / e6)));
-	}
-
     @Override
     public void create() {
         spriteBatch = new SpriteBatch();
         camera = new OrthographicCamera();
         viewport = new ExtendViewport(10, 10, camera);
         viewportGUI = new ExtendViewport(10, 10);
+
+        Gdx.graphics.setVSync(false);
+        Gdx.graphics.setForegroundFPS(300);
 
         font = new BitmapFont();
 	    font.setUseIntegerPositions(false);
@@ -52,7 +51,8 @@ public class Main implements ApplicationListener {
         
         gridManager = new GridManager();
 
-        Grid world = gridManager.addGrid(new Vector2(-128, -128), 512, 256);
+        int scale = 128;
+        Grid world = gridManager.addGrid(new Vector2(-1 * scale, -1 * scale), 4 * scale, 2 * scale);
         world.fill(TilePrefab.earth);
         world.splitType = Grid.SplitType.SHED;
         world.immobile = true;
@@ -90,7 +90,7 @@ public class Main implements ApplicationListener {
         camera.position.x += dt * speed * camera.zoom * ((Gdx.input.isKeyPressed(Input.Keys.D) ? 1 : 0) - (Gdx.input.isKeyPressed(Input.Keys.A) ? 1 : 0));
         camera.position.y += dt * speed * camera.zoom * ((Gdx.input.isKeyPressed(Input.Keys.W) ? 1 : 0) - (Gdx.input.isKeyPressed(Input.Keys.S) ? 1 : 0));
         camera.zoom += dt * speed * (0.2f) * camera.zoom * ((Gdx.input.isKeyPressed(Input.Keys.E) ? 1 : 0) - (Gdx.input.isKeyPressed(Input.Keys.Q) ? 1 : 0));
-        //camera.zoom = Math.min(10f, camera.zoom);
+        camera.zoom = Math.max(0.1f, Math.min(10f, camera.zoom));
 
         Vector2 cursorPos = new Vector2(Gdx.input.getX(), Gdx.input.getY());
         viewport.unproject(cursorPos);
@@ -149,6 +149,12 @@ public class Main implements ApplicationListener {
                     grid.setTileHealth(index, grid.tiles[index].health - damage);
                 }
             }
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+                System.out.println("MERGE");
+                for (Grid gridOther : gridManager.grids) {
+                    grid.merge(new Grid[]{gridOther});
+                }
+            }
         }
 
         frame += 1;
@@ -176,13 +182,12 @@ public class Main implements ApplicationListener {
             squareSprite.draw(spriteBatch);
         }
 
-
         font.getData().setScale(0.04f);
         font.draw(spriteBatch, "Controls: [Q][E] [W][A][S][D] [Z][X] [C][V][B] [LMB] [RMB] [Arrows]", -6f, -1f);
 
         spriteBatch.setProjectionMatrix(viewportGUI.getCamera().combined);
         font.getData().setScale(0.05f);
-        font.draw(spriteBatch, String.valueOf((int) (1 / dt)), 0f, 10);
+        font.draw(spriteBatch, String.valueOf((int) (1 / dt)), 0f, viewportGUI.unproject(new Vector2(0, 0)).y);
 
         spriteBatch.end();
     }

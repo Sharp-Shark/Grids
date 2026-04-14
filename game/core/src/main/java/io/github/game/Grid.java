@@ -52,9 +52,8 @@ public class Grid {
 		this.width = width;
 		this.height = height;
 		tiles = new Tile[width * height];
-		Tile tile;
 		for (int i = 0; i < this.tiles.length; i++) {
-			tile = new Tile(this, TilePrefab.empty);
+			Tile tile = new Tile(this, TilePrefab.empty);
 			tiles[i] = tile;
 		}
 		deletedIndexes = new ArrayList<Integer>(width * height);
@@ -62,6 +61,10 @@ public class Grid {
 		this.gridManager = gridManager;
 		removed = false;
 	}
+
+    public Vector2 getSize () {
+        return new Vector2(width * tileSize, height * tileSize);
+    }
 
 	public void resize (int translateX, int translateY, int newWidth, int newHeight) {
 		Tile[] newTiles = new Tile[newWidth * newHeight];
@@ -320,6 +323,19 @@ public class Grid {
 		Math.abs(pos.y - grid.pos.y + tileSize * (height - grid.height) / 2f) <= tileSize * (height + grid.height) / 2f;
 	}
 
+	public boolean isTouchingPoints (Vector2[] points) {
+		if (removed) return false;
+
+		for (Vector2 pos : points) {
+			int index = this.posToIndex(pos);
+			if (index != -1 && !tiles[index].isNoCollision()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public boolean isTouchingGridPerTile (Grid grid) {
 		if (removed) return false;
 
@@ -333,11 +349,8 @@ public class Grid {
 				for (Vector2 cornerOffset : cornerOffsets) {
 					Vector2 pos = this.indexToPos(i).add(new Vector2(cornerOffset).scl(tileSize));
 					int index = grid.posToIndex(pos);
-					if (index != -1) {
-						tile = grid.tiles[index];
-						if (!tile.isNoCollision()) {
-							return true;
-						}
+					if (index != -1 && !grid.tiles[index].isNoCollision()) {
+						return true;
 					}
 				}
 			}
@@ -405,23 +418,24 @@ public class Grid {
 
 		sprite.setSize(tileSize, tileSize);
 
-		Vector2 blc = viewport.unproject(new Vector2(0, viewport.getScreenHeight()));
-		Vector2 trc = viewport.unproject(new Vector2(viewport.getScreenWidth(), 0));
-
+		Vector2 blc = viewport.unproject(new Vector2(0, viewport.getScreenHeight())); // bottom left corner
+		Vector2 trc = viewport.unproject(new Vector2(viewport.getScreenWidth(), 0)); // top right corner
 		int offsetX = (int) (Math.max(0, blc.x - pos.x) / tileSize);
 		int y = (int) (Math.max(0, blc.y - pos.y) / tileSize);
+		int index = offsetX + y * width;
 		Vector2 drawPos = new Vector2(pos.x + offsetX * tileSize, pos.y + y * tileSize);
 		while (y < height && drawPos.y <= trc.y) {
 			int x = offsetX;
 			while (x < width && drawPos.x <= trc.x) {
-				int index = this.translateIndex(0, x, y);
 				if (index != -1 && tiles[index].isNoCollision() == drawFront) {
 					tiles[index].draw(sb, sprite, drawPos);
 				}
 				x += 1;
+				index += 1;
 				drawPos.x += tileSize;
 			}
 			y += 1;
+			index += width - x + offsetX;
 			drawPos.x = pos.x + offsetX * tileSize;
 			drawPos.y += tileSize;
 		}

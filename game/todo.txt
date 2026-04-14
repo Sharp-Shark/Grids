@@ -15,7 +15,3 @@ because if all the regions haven't merged yet but there is only 1 region active,
 the one other issue with this optimization is it would mess up how the size is determined for the resizing. This optimization would probably cause it to underestimate the size
 
 also I should later add chunks to the grids. Or maybe not, maybe it'd be more efficient to just split up really large grids into smaller grids cuz I think the only really big grids would probably be stuff like the world itself, which is static, and thus splitting it wouldn't impact the physics or anything like that. This *would* have the downside of increasing the amount of grids though... so maybe grids are good indead lol
-
-I should make a function that generates a vertexes list that corresponds to the corners of all the tiles of a grid (minus the repeated corners). This would be useful for stuff like explosions and collision detection for non-grid entities larger than 1 tile (and smaller too!) (in case of doubt see "game/todo1.png")
-this function SHOULD take the possibility into account that the rectangle size isn't a nice multiple of the tileSize. For that it'll just "round upwards" and have 1 extra row/column of vertices that isn't as spaced out as the rest
-oh yeah and obv I should make a function for the grid that does collision checks using that list of vertexes, but honestly that'd be trivial in comparison to some of the other stuff written here
