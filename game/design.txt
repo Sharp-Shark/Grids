@@ -1,0 +1,46 @@
+I meant more the ship destruction
+I should probably decide now before later whether I want to keep it axis-aligned or allow for grid rotation
+I have to wonder if subs rotating in Barotrauma would improve it or CTS
+I lean towards not really
+would probably be annoying if anything
+atmost small angles could be cool for immersion
+but anything greater would greatly impeditive to moving inside and quickly make you stuck
+if rotation wouldn't be nice in regular baro or in cts mod
+then I'm probably fine not having it for the grid engine thing I'm making
+cosmoteer does have it
+but cosmoteer is """top down""" and zero gravity
+whereas what I'll make is probably a sidescroll
+but if I do make it top down, rotation would actually be a great addition
+ooooooh something I could try to do is allow your whole camera to flip, and if the ship you're on flips, your camera will flip with it, so the interior looks unchanged even if everything outside isn't. This might be severely disorienting though... idk
+idk if I'll want to implement grid flipping
+testing the feature in CTS felt extremely disorienting for anything that isn't super small
+and you run into the issue of determining which point should be the center of the flipping and avoiding clipping
+with a shape that isn't symmetrical with the axis of flipping
+you could have that
+Shark Factory — Yesterday at 22:34
+so you'd need to check if flipping will cause that and then disallow flipping in such a case, which feels fine codewise but I hardly think it'll feel good
+I think flipping only works when you don't be in the ship that flips itself, otherwise it's bad 
+Shark Factory — Yesterday at 22:43
+tl;dr
+definitely no flipping cuz that won't feel good when you're a player who can enter/exit the ship. I still should implement a flipX (and maybe even flipY?) property for the same reasons barotrauma does (maybe for wrecks and/or enemy ships)
+keep it axis-aligned if it's a sidescroller (like barotrauma/airships) or make it rotate if it's a top-down (like SS13/SS14/cosmoteer)
+ 
+Shark Factory — Yesterday at 22:58
+I also have to wonder how I'll tackle multiblock structures
+don't have 'em
+have them be procedural. So for example if you want to make a reactor, instead of it being a predefined NxM thing you place down, you instead place individual tile and the game registers you've built it
+have tiles be able to point to a multiblock structure with some kind of data, either in the tile or the multiblock structure to be able to know which of the tiles is the "anchor" for the structure (the bottom left corner of the structure)
+I have to say, it feels like it'd be pretty neat if your ships were like a small cutout of a mindustry factory, with possibly pipes to automatically load your turrets and boiler, and wires to power your engines, so that if your ship gets shot, all kinds of catastrophic malfunctions could occur to cripple it
+like a cascading domino
+imagine some high penetration shot manages to damage a deep internal pipe that usually transfer coolant into your reactor
+and it starts to overheat and then explode
+it'd be like those chain of explosions you get in CTS but possibly cooler
+Shark Factory — Yesterday at 23:06
+I'm not experienced in this, so I can't make it too complicated or I won't be able to make it decently performant
+I imagine simple pipes for physical transfer of stuff
+and ranged "wireless" spaced out relays/junctions for power/signal transfer (like in mindustry for electricity) would probably not be horribly unperformant?
+or I guess there is really no reason these two couldn't be shared...
+or maybe there is
+Shark Factory — Yesterday at 23:08
+(as in power is a resource that can be transfered via pipes... maybe I could go a steampunk route and have all power be based on steam?)
+it'd still be ideal to have some kind of wireless data transfer, probably by having tiles that can hold relative address(es) for input/output

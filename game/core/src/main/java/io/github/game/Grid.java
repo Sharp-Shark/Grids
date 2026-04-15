@@ -14,7 +14,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
-public class Grid {
+public class Grid extends Entity {
 	final static Vector2[] cornerOffsets = {new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1)};
 	final static int[][] neighbours = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
 	final static float tileSize = 0.5f;
@@ -27,13 +27,6 @@ public class Grid {
 		ATOMIC
 	}
 
-	Vector2 pos;
-	Vector2 vel;
-	Vector2 gravity = new Vector2(0, -5);
-	float friction = 0.9f;
-	float mass = 0;
-	boolean immobile = false;
-
 	int width;
 	int height;
 	Tile[] tiles;
@@ -41,30 +34,20 @@ public class Grid {
 	SplitType splitType = SplitType.DEFAULT;
 	ArrayList<Integer> deletedIndexes;
 
-	GridManager gridManager;
-	boolean removed = false;
-
 	public Grid (int width, int height, GridManager gridManager) {
-		pos = new Vector2();
-		vel = new Vector2();
-		gravity = new Vector2(gravity);
+		super(gridManager);
 
 		this.width = width;
 		this.height = height;
+		widthAABB = width * tileSize;
+		heightAABB = height * tileSize;
 		tiles = new Tile[width * height];
 		for (int i = 0; i < this.tiles.length; i++) {
 			Tile tile = new Tile(this, TilePrefab.empty);
 			tiles[i] = tile;
 		}
 		deletedIndexes = new ArrayList<Integer>(width * height);
-		
-		this.gridManager = gridManager;
-		removed = false;
 	}
-
-    public Vector2 getSize () {
-        return new Vector2(width * tileSize, height * tileSize);
-    }
 
 	public void resize (int translateX, int translateY, int newWidth, int newHeight) {
 		Tile[] newTiles = new Tile[newWidth * newHeight];
@@ -86,6 +69,8 @@ public class Grid {
 
 		width = newWidth;
 		height = newHeight;
+		widthAABB = width * tileSize;
+		heightAABB = height * tileSize;
 		tiles = newTiles;
 		pos.add(translateX * tileSize, translateY * tileSize);
 	}
@@ -94,10 +79,6 @@ public class Grid {
 		for (int i = 0; i < tiles.length; i++) {
 			this.setTilePrefab(i, newPrefab, true);
 		}
-	}
-
-	public Vector2 getRelativePosition (float x, float y) {
-		return new Vector2((1 + x) * tileSize * width / 2f, (1 + y) * tileSize * height / 2f);
 	}
 
 	public Vector2 indexToPos (int index) {
@@ -118,8 +99,8 @@ public class Grid {
 	public int posToIndex (Vector2 pos) {
 		if (pos.x - this.pos.x <= 0) return -1;
 		if (pos.y - this.pos.y <= 0) return -1;
-		if (pos.x - this.pos.x >= tileSize * width) return -1;
-		if (pos.y - this.pos.y >= tileSize * height) return -1;
+		if (pos.x - this.pos.x >= widthAABB) return -1;
+		if (pos.y - this.pos.y >= heightAABB) return -1;
 		int x = (int) ((pos.x - this.pos.x) / tileSize);
 		int y = (int) ((pos.y - this.pos.y) / tileSize);
 		return Math.min(width - 1, x) + Math.min(height - 1, y) * width;
@@ -316,13 +297,6 @@ public class Grid {
 		// and then add the tiles from the other grids and finally delete the other grids
 	}
 
-	public boolean isTouchingGridAABB (Grid grid) {
-		if (removed) return false;
-
-		return Math.abs(pos.x - grid.pos.x + tileSize * (width - grid.width) / 2f) <= tileSize * (width + grid.width) / 2f && 
-		Math.abs(pos.y - grid.pos.y + tileSize * (height - grid.height) / 2f) <= tileSize * (height + grid.height) / 2f;
-	}
-
 	public boolean isTouchingPoints (Vector2[] points) {
 		if (removed) return false;
 
@@ -362,7 +336,7 @@ public class Grid {
 		if (removed) return null;
 
 		for (Grid grid : grids) {
-			if ((this != grid) && !grid.removed && this.isTouchingGridAABB(grid) && this.isTouchingGridPerTile(grid)) {
+			if ((this != grid) && !grid.removed && this.isTouchingAABB(grid) && this.isTouchingGridPerTile(grid)) {
 				return grid;
 			}
 		}

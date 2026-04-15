@@ -176,7 +176,7 @@ public class Main implements ApplicationListener {
         
         if (selectedIndex != -1) {
             Grid grid = gridManager.grids.get(selectedIndex);
-            squareSprite.setSize(Grid.tileSize * (grid.width + 1), Grid.tileSize * (grid.height + 1));
+            squareSprite.setSize(grid.widthAABB + Grid.tileSize, grid.heightAABB + Grid.tileSize);
             squareSprite.setPosition(grid.pos.x - Grid.tileSize / 2f, grid.pos.y - Grid.tileSize / 2f);
             squareSprite.setColor(new Color(1.0f, 1.0f, 1.0f, 0.1f));
             squareSprite.draw(spriteBatch);
