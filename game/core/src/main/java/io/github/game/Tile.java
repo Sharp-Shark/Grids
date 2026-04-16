@@ -23,7 +23,7 @@ public class Tile {
 
     public void setPrefab (TilePrefab newPrefab, boolean revive) {
         if (health > 0) {
-            grid.mass += newPrefab.mass - prefab.mass;
+            grid.changeDensity(newPrefab.mass - prefab.mass, newPrefab.area - prefab.area);
         }
         this.prefab = newPrefab;
         if (revive) {
@@ -34,8 +34,8 @@ public class Tile {
     }
 
     public void setGrid (Grid newGrid) {
-        grid.mass -= this.getMass();
-        newGrid.mass += this.getMass();
+        grid.changeDensity(-this.getMass(), -this.getArea());
+        newGrid.changeDensity(this.getMass(), this.getArea());
         grid = newGrid;
     }
 
@@ -43,14 +43,18 @@ public class Tile {
         float oldHealth = health;
         health = Math.max(prefab.minHealth, Math.min(prefab.maxHealth, newHealth));
         if (oldHealth > 0 && health <= 0) {
-            grid.mass -= prefab.mass;
+            grid.changeDensity(-prefab.mass, -prefab.area);
         } else if (oldHealth <= 0 && health > 0) {
-            grid.mass += prefab.mass;
+            grid.changeDensity(prefab.mass, prefab.area);
         }
     }
 
     public float getMass () {
         return health > 0 ? prefab.mass : 0;
+    }
+
+    public float getArea () {
+        return this.isNoCollision() ? 0 : prefab.area;
     }
 
     public boolean isNoCollision () {

@@ -18,6 +18,7 @@ public class Grid extends Entity {
 	final static Vector2[] cornerOffsets = {new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1)};
 	final static int[][] neighbours = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
 	final static float tileSize = 0.5f;
+	final static float tileArea = tileSize * tileSize;
 
 	public enum SplitType {
 		DEFAULT,
@@ -34,24 +35,29 @@ public class Grid extends Entity {
 	SplitType splitType = SplitType.DEFAULT;
 	ArrayList<Integer> deletedIndexes;
 
-	public Grid (int width, int height, GridManager gridManager) {
-		super(gridManager);
+	public Grid (int width, int height, EntityManager entityManager) {
+		super(entityManager);
 
 		this.width = width;
 		this.height = height;
 		widthAABB = width * tileSize;
 		heightAABB = height * tileSize;
+		area = 0;
 		tiles = new Tile[width * height];
 		for (int i = 0; i < this.tiles.length; i++) {
 			Tile tile = new Tile(this, TilePrefab.empty);
 			tiles[i] = tile;
 		}
+		density = mass / area;
 		deletedIndexes = new ArrayList<Integer>(width * height);
+
+		entityType = EntityType.GRID;
 	}
 
 	public void resize (int translateX, int translateY, int newWidth, int newHeight) {
 		Tile[] newTiles = new Tile[newWidth * newHeight];
-		this.mass = 0;
+		mass = 0;
+		area = 0;
 
 		Tile tile;
 		for (int index = 0; index < newTiles.length; index++) {
@@ -63,9 +69,11 @@ public class Grid extends Entity {
 			} else {
 				tile = tiles[x + y * width];
 				newTiles[index] = tile;
-				this.mass += tile.getMass();
+				mass += tile.getMass();
+				area += tile.getArea();
 			}
 		}
+		density = mass / area;
 
 		width = newWidth;
 		height = newHeight;
@@ -73,6 +81,12 @@ public class Grid extends Entity {
 		heightAABB = height * tileSize;
 		tiles = newTiles;
 		pos.add(translateX * tileSize, translateY * tileSize);
+	}
+
+	public void changeDensity (float dm, float da) {
+		mass += dm;
+		area += da;
+		density = mass / area;
 	}
 
 	public void fill (TilePrefab newPrefab) {
@@ -97,10 +111,10 @@ public class Grid extends Entity {
 	}
 
 	public int posToIndex (Vector2 pos) {
-		if (pos.x - this.pos.x <= 0) return -1;
-		if (pos.y - this.pos.y <= 0) return -1;
-		if (pos.x - this.pos.x >= widthAABB) return -1;
-		if (pos.y - this.pos.y >= heightAABB) return -1;
+		if (pos.x - this.pos.x < 0) return -1;
+		if (pos.y - this.pos.y < 0) return -1;
+		if (pos.x - this.pos.x > widthAABB) return -1;
+		if (pos.y - this.pos.y > heightAABB) return -1;
 		int x = (int) ((pos.x - this.pos.x) / tileSize);
 		int y = (int) ((pos.y - this.pos.y) / tileSize);
 		return Math.min(width - 1, x) + Math.min(height - 1, y) * width;
@@ -263,7 +277,7 @@ public class Grid extends Entity {
 				for (int i = 1; i < regionCount; i++) {
 					int[] rect = regionRect[regions[i]];
 					Vector2 pos = new Vector2(this.pos).add(rect[0] * tileSize, rect[1] * tileSize);
-					Grid grid = gridManager.addGrid(pos, rect[2] - rect[0] + 1, rect[3] - rect[1] + 1);
+					Grid grid = entityManager.addGrid(pos, rect[2] - rect[0] + 1, rect[3] - rect[1] + 1);
 					grid.vel = new Vector2(this.vel);
 					grids[i] = grid;
 				}
@@ -297,10 +311,20 @@ public class Grid extends Entity {
 		// and then add the tiles from the other grids and finally delete the other grids
 	}
 
-	public boolean isTouchingPoints (Vector2[] points) {
-		if (removed) return false;
+	public boolean isTouchingPoint (Vector2 point) {
+		if (!super.isTouchingPoint(point)) { return false; }
 
-		for (Vector2 pos : points) {
+		int index = this.posToIndex(point);
+		return index != -1 && !tiles[index].isNoCollision();
+	}
+
+	public boolean isTouchingEntity (Entity entity) {
+		if (!this.isTouchingAABB(entity)) { return false; }
+		if (entity.points == null) { return false; }
+
+		Vector2 pos = new Vector2();
+		for (Vector2 point : entity.points) {
+			pos.set(entity.pos.x + point.x, entity.pos.y + point.y);
 			int index = this.posToIndex(pos);
 			if (index != -1 && !tiles[index].isNoCollision()) {
 				return true;
@@ -310,11 +334,11 @@ public class Grid extends Entity {
 		return false;
 	}
 
-	public boolean isTouchingGridPerTile (Grid grid) {
-		if (removed) return false;
+	public boolean isTouchingGrid (Grid grid) {
+		if (!this.isTouchingAABB(grid)) { return false; }
 
 		if (grid.tiles.length < tiles.length) {
-			return grid.isTouchingGridPerTile(this);
+			return grid.isTouchingGrid(this);
 		}
 
 		for (int i = 0; i < tiles.length; i++) {
@@ -332,11 +356,22 @@ public class Grid extends Entity {
 		return false;
 	}
 
+	public Entity getCollidingEntity (ArrayList<Entity> entities) {
+		if (removed) return null;
+
+		for (Entity entity : entities) {
+			if ((this != entity) && !entity.removed && this.isTouchingAABB(entity) && this.isTouchingEntity(entity)) {
+				return entity;
+			}
+		}
+		return null;
+	}
+
 	public Grid getCollidingGrid (ArrayList<Grid> grids) {
 		if (removed) return null;
 
 		for (Grid grid : grids) {
-			if ((this != grid) && !grid.removed && this.isTouchingAABB(grid) && this.isTouchingGridPerTile(grid)) {
+			if ((this != grid) && !grid.removed && this.isTouchingAABB(grid) && this.isTouchingGrid(grid)) {
 				return grid;
 			}
 		}
@@ -345,44 +380,8 @@ public class Grid extends Entity {
 
 	public void update (float dt) {
 		if (removed) return;
-
-		if (mass <= 0) {
-			removed = true;
-		}
-
-		if (!immobile) {
-			Grid grid;
-			float totalMass, dv;
-			float restitution = 0.5f;
-			// horizontal
-			pos.x += vel.x * dt;
-			grid = this.getCollidingGrid(gridManager.grids);
-			if (grid != null) {
-				pos.x -= vel.x * dt;
-
-				totalMass = mass + grid.mass;
-				dv = grid.vel.x - vel.x;
-				vel.x += (restitution + 1) * grid.mass * dv / totalMass;
-				grid.vel.x -= (restitution + 1) * mass * dv / totalMass;
-			}
-			// vertical
-			pos.y += vel.y * dt;
-			grid = this.getCollidingGrid(gridManager.grids);
-			if (grid != null) {
-				pos.y -= vel.y * dt;
-
-				totalMass = mass + grid.mass;
-				dv = grid.vel.y - vel.y;
-				vel.y += (restitution + 1) * grid.mass * dv / totalMass;
-				grid.vel.y -= (restitution + 1) * mass * dv / totalMass;
-			}
-			// gravity
-			vel.add(new Vector2(gravity).scl(dt));
-			// friction
-			vel.scl((float) Math.pow(friction, dt));
-		} else {
-			vel.set(0, 0);
-		}
+		
+		super.update(dt);
 
 		this.split();
 	}
@@ -413,5 +412,7 @@ public class Grid extends Entity {
 			drawPos.x = pos.x + offsetX * tileSize;
 			drawPos.y += tileSize;
 		}
+
+		//font.draw(sb, String.valueOf(density), pos.x, pos.y);
 	}
 }

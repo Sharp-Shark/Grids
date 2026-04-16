@@ -30,7 +30,16 @@ public class TilePrefab {
         1f,
         0f,
         true,
-        Color.BLUE,
+        new Color(Color.BLUE).mul(1, 1, 1, 0.5f),
+        false
+    );
+    final static TilePrefab light = new TilePrefab(
+        "light",
+        0f,
+        1f,
+        0.1f,
+        false,
+        Color.SKY,
         false
     );
     final static TilePrefab earth = new TilePrefab(
@@ -49,6 +58,7 @@ public class TilePrefab {
     float minHealth;
     float maxHealth;
     float mass;
+    float area;
     boolean noCollision;
     Color color;
     boolean noDraw;
@@ -58,6 +68,7 @@ public class TilePrefab {
         this.minHealth = minHealth;
         this.maxHealth = maxHealth;
         this.mass = mass;
+        this.area = noCollision ? 0 : Grid.tileArea;
         this.noCollision = noCollision;
         this.color = color;
         this.noDraw = noDraw;

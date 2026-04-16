@@ -28,7 +28,7 @@ public class Main implements ApplicationListener {
     BitmapFont font;
     Texture squareTexture;
     Sprite squareSprite;
-    GridManager gridManager;
+    EntityManager entityManager;
 
     int selectedIndex = -1;
     int frame = 0;
@@ -49,22 +49,25 @@ public class Main implements ApplicationListener {
         squareTexture = new Texture("square.png");
         squareSprite = new Sprite(squareTexture);
         
-        gridManager = new GridManager();
+        entityManager = new EntityManager();
 
         int scale = 128;
-        Grid world = gridManager.addGrid(new Vector2(-1 * scale, -1 * scale), 4 * scale, 2 * scale);
+        Grid world = entityManager.addGrid(new Vector2(-1 * scale, -1 * scale), 4 * scale, 2 * scale);
         world.fill(TilePrefab.earth);
         world.splitType = Grid.SplitType.SHED;
         world.immobile = true;
 
         float x = 0;
+        float y = 0.01f;
         for (int i = 0; i < 16; i++) {
-            Grid grid = gridManager.addGrid(new Vector2(x, 0), 8, 8);
+            Grid grid = entityManager.addGrid(new Vector2(x, y), 8, 8);
             grid.fill(TilePrefab.solid);
             grid.splitType = Grid.SplitType.REMEMBER;
 
             x -= 9 * Grid.tileSize;
         }
+
+        entityManager.addEntity(new Vector2(9, y), 4, 4);
     }
 
     @Override
@@ -97,35 +100,25 @@ public class Main implements ApplicationListener {
 
         if (Gdx.input.isTouched()) {
             if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-                int priorityWinner, priority;
-                priorityWinner = 0;
-                priority = 0;
                 selectedIndex = -1;
 
-                Grid grid;
-                for (int i = 0; i < gridManager.grids.size(); i++) {
-                    grid = gridManager.grids.get(i);
-                    if (grid.removed) continue;
-                    int index = grid.posToIndex(cursorPos);
-                    if (index != -1 && !grid.tiles[index].isNoDraw()) {
-                        priority = grid.tiles[index].isNoCollision() ? 0 : 1;
-                        if (priority >= priorityWinner) {
-                            selectedIndex = i;
-                            priorityWinner = priority;
-                        }
-                    }
+                Entity entity;
+                for (int i = 0; i < entityManager.entities.size(); i++) {
+                    entity = entityManager.entities.get(i);
+                    if (entity.removed || !entity.isTouchingPoint(cursorPos)) continue;
+                    selectedIndex = i;
                 }
             }
         }
 
-        if (selectedIndex != -1 && gridManager.grids.get(selectedIndex).removed) { selectedIndex = -1; }
+        if (selectedIndex != -1 && entityManager.entities.get(selectedIndex).removed) { selectedIndex = -1; }
         if (selectedIndex != -1) {
-            Grid grid = gridManager.grids.get(selectedIndex);
+            Entity entity = entityManager.entities.get(selectedIndex);
 
             float force = 10f;
             Vector2 thrust;
             if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
-                thrust = new Vector2(cursorPos).sub(grid.getRelativePosition(0f, 0f).add(grid.pos));
+                thrust = new Vector2(cursorPos).sub(entity.getRelativePosition(0f, 0f).add(entity.pos));
             } else {
                 thrust = new Vector2(
                     (Gdx.input.isKeyPressed(Input.Keys.RIGHT) ? 1 : 0) - (Gdx.input.isKeyPressed(Input.Keys.LEFT) ? 1 : 0),
@@ -133,27 +126,37 @@ public class Main implements ApplicationListener {
                 );
             }
             thrust.clamp(0f, 1f).scl(dt * force);
-            grid.vel.add(thrust);
+            entity.vel.add(thrust);
 
-            float damage = dt * 8f * ((Gdx.input.isKeyPressed(Input.Keys.X) ? 1 : 0) - (Gdx.input.isKeyPressed(Input.Keys.Z) ? 1 : 0));
-            int index = grid.posToIndex(cursorPos);
-            if (index != -1) {
-                if (Gdx.input.isKeyPressed(Input.Keys.C)) {
-                    grid.setTilePrefab(index, TilePrefab.empty, true);
-                } else if (Gdx.input.isKeyPressed(Input.Keys.V)) {
-                    grid.setTilePrefab(index, TilePrefab.solid, true);
-                } else if (Gdx.input.isKeyPressed(Input.Keys.B)) {
-                    grid.setTilePrefab(index, TilePrefab.background, true);
+            if (entity instanceof Grid) {
+                Grid grid = (Grid) entity;
+
+                float damage = dt * 8f * ((Gdx.input.isKeyPressed(Input.Keys.X) ? 1 : 0) - (Gdx.input.isKeyPressed(Input.Keys.Z) ? 1 : 0));
+                int index = grid.posToIndex(cursorPos);
+                if (index != -1) {
+                    if (Gdx.input.isKeyPressed(Input.Keys.C)) {
+                        grid.setTilePrefab(index, TilePrefab.empty, true);
+                    } else if (Gdx.input.isKeyPressed(Input.Keys.V)) {
+                        grid.setTilePrefab(index, TilePrefab.solid, true);
+                    } else if (Gdx.input.isKeyPressed(Input.Keys.B)) {
+                        grid.setTilePrefab(index, TilePrefab.background, true);
+                    } else if (Gdx.input.isKeyPressed(Input.Keys.N)) {
+                        grid.setTilePrefab(index, TilePrefab.light, true);
+                    } else if (Gdx.input.isKeyPressed(Input.Keys.M)) {
+                        grid.setTilePrefab(index, TilePrefab.earth, true);
+                    }
+                    if (damage != 0) {
+                        grid.setTileHealth(index, grid.tiles[index].health - damage);
+                    }
                 }
-                if (damage != 0) {
-                    grid.setTileHealth(index, grid.tiles[index].health - damage);
+                /*
+                if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+                    System.out.println("MERGE");
+                    for (Grid gridOther : entityManager.grids) {
+                        grid.merge(new Grid[]{gridOther});
+                    }
                 }
-            }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
-                System.out.println("MERGE");
-                for (Grid gridOther : gridManager.grids) {
-                    grid.merge(new Grid[]{gridOther});
-                }
+                */
             }
         }
 
@@ -161,9 +164,9 @@ public class Main implements ApplicationListener {
     }
     
     private void update (float dt) {
-        gridManager.update(dt);
+        entityManager.update(dt);
 
-        if (selectedIndex != -1 && gridManager.grids.get(selectedIndex).removed) { selectedIndex = -1; }
+        if (selectedIndex != -1 && entityManager.entities.get(selectedIndex).removed) { selectedIndex = -1; }
     }
 
     private void draw (float dt) {
@@ -172,12 +175,12 @@ public class Main implements ApplicationListener {
         spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
         spriteBatch.begin();
 
-        gridManager.draw(spriteBatch, squareSprite, font, viewport);
-        
+        entityManager.draw(spriteBatch, squareSprite, font, viewport);
+
         if (selectedIndex != -1) {
-            Grid grid = gridManager.grids.get(selectedIndex);
-            squareSprite.setSize(grid.widthAABB + Grid.tileSize, grid.heightAABB + Grid.tileSize);
-            squareSprite.setPosition(grid.pos.x - Grid.tileSize / 2f, grid.pos.y - Grid.tileSize / 2f);
+            Entity entity = entityManager.entities.get(selectedIndex);
+            squareSprite.setSize(entity.widthAABB + Grid.tileSize, entity.heightAABB + Grid.tileSize);
+            squareSprite.setPosition(entity.pos.x - Grid.tileSize / 2f, entity.pos.y - Grid.tileSize / 2f);
             squareSprite.setColor(new Color(1.0f, 1.0f, 1.0f, 0.1f));
             squareSprite.draw(spriteBatch);
         }
