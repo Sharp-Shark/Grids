@@ -15,8 +15,10 @@ public class Entity {
 
     Vector2 pos;
     Vector2 vel;
-	Vector2 gravity = new Vector2(0, -5);
-	float friction = 0.9f;
+	Vector2 gravity = new Vector2(0, -8);
+	float airFriction = 0.95f;
+	float floorFriction = 0.25f;
+	float restitution = 0.5f;
 	float mass = 0;
 	float area = 0; // displaced area does not count background tiles
 	float density = 1 / (Grid.tileSize * Grid.tileSize);
@@ -55,15 +57,13 @@ public class Entity {
 	}
 
     public Vector2[] getGridPoints () {
-        int widthInteger = (int) Math.floor(widthAABB / Grid.tileSize) + 1;
-        int heightInteger = (int) Math.floor(heightAABB / Grid.tileSize) + 1;
-        widthInteger *= 2;
-        heightInteger *= 2;
+        int widthInteger = (int) Math.ceil(widthAABB / Grid.tileSize) + 1;
+        int heightInteger = (int) Math.ceil(heightAABB / Grid.tileSize) + 1;
         Vector2[] points = new Vector2[widthInteger * heightInteger];
         int pointCount = 0;
         for (int y = 0; y < heightInteger; y++) {
             for (int x = 0; x < widthInteger; x++) {
-                points[pointCount] = new Vector2(Math.min(widthAABB, y * Grid.tileSize), Math.min(heightAABB, x * Grid.tileSize));
+                points[pointCount] = new Vector2(Math.min(widthAABB, x * Grid.tileSize), Math.min(heightAABB, y * Grid.tileSize));
                 pointCount += 1;
             }
         }
@@ -139,13 +139,14 @@ public class Entity {
 
 		Entity entity;
 		float totalMass, dv;
-		float restitution = 0.5f;
+		float restitution;
 		// horizontal
 		pos.x += vel.x * dt;
 		entity = this.getCollidingGeneric(entityManager.entities);
 		if (entity != null) {
 			pos.x -= vel.x * dt;
 
+			restitution = this.restitution * entity.restitution;
 			if (entity.immobile) {
 				vel.x -= (restitution + 1) * vel.x;
 			} else {
@@ -160,7 +161,14 @@ public class Entity {
 		entity = this.getCollidingGeneric(entityManager.entities);
 		if (entity != null) {
 			pos.y -= vel.y * dt;
+			
+			if (vel.y < 0) {
+				vel.x *= Math.pow(entity.floorFriction, dt);
+			} else {
+				entity.vel.x *= Math.pow(this.floorFriction, dt);
+			}
 
+			restitution = this.restitution * entity.restitution;
 			if (entity.immobile) {
 				vel.y -= (restitution + 1) * vel.y;
 			} else {
@@ -175,7 +183,7 @@ public class Entity {
 		// buoyancy
 		vel.sub(new Vector2(gravity).scl(area * ambientDensity / mass * dt));
 		// friction
-		vel.scl((float) Math.pow(friction, dt));
+		vel.scl((float) Math.pow(airFriction, dt));
 	}
 
 	void update (float dt) {
@@ -193,6 +201,15 @@ public class Entity {
         sprite.setPosition(pos.x, pos.y);
         sprite.setColor(Color.WHITE);
         sprite.draw(sb);
+
+		/*
+		for (Vector2 point : points) {
+			sprite.setSize(Grid.tileSize / 4f, Grid.tileSize / 4f);
+        	sprite.setPosition(point.x + pos.x, point.y + pos.y);
+        	sprite.setColor(Color.GREEN);
+        	sprite.draw(sb);
+		}
+		*/
 
 		//font.draw(sb, String.valueOf(density), pos.x, pos.y);
 	}

@@ -1,5 +1,11 @@
 package io.github.game;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Vector;
 
 import org.w3c.dom.css.Rect;
@@ -52,14 +58,14 @@ public class Main implements ApplicationListener {
         entityManager = new EntityManager();
 
         int scale = 128;
-        Grid world = entityManager.addGrid(new Vector2(-1 * scale, -1 * scale), 4 * scale, 2 * scale);
+        Grid world = entityManager.addGrid(new Vector2(-1 * scale, -0.5f * scale), 4 * scale, 1 * scale);
         world.fill(TilePrefab.earth);
         world.splitType = Grid.SplitType.SHED;
         world.immobile = true;
 
         float x = 0;
         float y = 0.01f;
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 8; i++) {
             Grid grid = entityManager.addGrid(new Vector2(x, y), 8, 8);
             grid.fill(TilePrefab.solid);
             grid.splitType = Grid.SplitType.REMEMBER;
@@ -67,7 +73,11 @@ public class Main implements ApplicationListener {
             x -= 9 * Grid.tileSize;
         }
 
-        entityManager.addEntity(new Vector2(9, y), 4, 4);
+        Grid grid = entityManager.addGrid(new Vector2(32, y), 128, 128);
+        grid.fill(TilePrefab.solid);
+        grid.splitType = Grid.SplitType.REMEMBER;
+
+        Entity player = entityManager.addEntity(new Vector2(5, y), 0.35f, 0.7f);
     }
 
     @Override
@@ -115,7 +125,7 @@ public class Main implements ApplicationListener {
         if (selectedIndex != -1) {
             Entity entity = entityManager.entities.get(selectedIndex);
 
-            float force = 10f;
+            float force = 16f;
             Vector2 thrust;
             if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
                 thrust = new Vector2(cursorPos).sub(entity.getRelativePosition(0f, 0f).add(entity.pos));
@@ -134,18 +144,24 @@ public class Main implements ApplicationListener {
                 float damage = dt * 8f * ((Gdx.input.isKeyPressed(Input.Keys.X) ? 1 : 0) - (Gdx.input.isKeyPressed(Input.Keys.Z) ? 1 : 0));
                 int index = grid.posToIndex(cursorPos);
                 if (index != -1) {
+                    if (grid.isIndexConnected(index)) {
+                        if (Gdx.input.isKeyPressed(Input.Keys.V)) {
+                            grid.setTilePrefab(index, TilePrefab.solid, true);
+                        } else if (Gdx.input.isKeyPressed(Input.Keys.B)) {
+                            grid.setTilePrefab(index, TilePrefab.background, true);
+                        } else if (Gdx.input.isKeyPressed(Input.Keys.N)) {
+                            grid.setTilePrefab(index, TilePrefab.light, true);
+                        } else if (Gdx.input.isKeyPressed(Input.Keys.M)) {
+                            grid.setTilePrefab(index, TilePrefab.earth, true);
+                        }
+                        if (damage < 0) {
+                            grid.setTileHealth(index, grid.tiles[index].health - damage);
+                        }
+                    }
                     if (Gdx.input.isKeyPressed(Input.Keys.C)) {
                         grid.setTilePrefab(index, TilePrefab.empty, true);
-                    } else if (Gdx.input.isKeyPressed(Input.Keys.V)) {
-                        grid.setTilePrefab(index, TilePrefab.solid, true);
-                    } else if (Gdx.input.isKeyPressed(Input.Keys.B)) {
-                        grid.setTilePrefab(index, TilePrefab.background, true);
-                    } else if (Gdx.input.isKeyPressed(Input.Keys.N)) {
-                        grid.setTilePrefab(index, TilePrefab.light, true);
-                    } else if (Gdx.input.isKeyPressed(Input.Keys.M)) {
-                        grid.setTilePrefab(index, TilePrefab.earth, true);
                     }
-                    if (damage != 0) {
+                    if (damage > 0) {
                         grid.setTileHealth(index, grid.tiles[index].health - damage);
                     }
                 }
@@ -183,10 +199,20 @@ public class Main implements ApplicationListener {
             squareSprite.setPosition(entity.pos.x - Grid.tileSize / 2f, entity.pos.y - Grid.tileSize / 2f);
             squareSprite.setColor(new Color(1.0f, 1.0f, 1.0f, 0.1f));
             squareSprite.draw(spriteBatch);
+            
+            if (entity.entityType == Entity.EntityType.GRID) {
+                Vector2 cursorPos = new Vector2(Gdx.input.getX(), Gdx.input.getY());
+                viewport.unproject(cursorPos);
+                ((Grid) entity).snapPos(cursorPos);
+                squareSprite.setSize(Grid.tileSize, Grid.tileSize);
+                squareSprite.setPosition(cursorPos.x, cursorPos.y);
+                squareSprite.setColor(new Color(1.0f, 1.0f, 1.0f, 0.5f));
+                squareSprite.draw(spriteBatch);
+            }
         }
 
         font.getData().setScale(0.04f);
-        font.draw(spriteBatch, "Controls: [Q][E] [W][A][S][D] [Z][X] [C][V][B] [LMB] [RMB] [Arrows]", -6f, -1f);
+        font.draw(spriteBatch, "Controls: [Q][E] [W][A][S][D] [Z][X] [C][V][B][N][M] [LMB] [RMB] [Arrows]", -6f, -1f);
 
         spriteBatch.setProjectionMatrix(viewportGUI.getCamera().combined);
         font.getData().setScale(0.05f);

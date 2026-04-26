@@ -1,3 +1,17 @@
+consider adding union-find for the regionMap region tracking stuff instead of checking every region whenever a tile is transferred
+```java
+int[] parent;
+
+int find(int x) {
+    if (parent[x] != x) parent[x] = find(parent[x]);
+    return parent[x];
+}
+
+void union(int a, int b) {
+    parent[find(a)] = find(b);
+}
+```
+
 I wonder what is a good algorithm for finding the effective size of a grid
 is peeling it back like an onion the best there is to do?
 or maybe I could track all the outer tiles of the grid

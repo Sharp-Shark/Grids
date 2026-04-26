@@ -31,9 +31,11 @@ public class Grid extends Entity {
 	int width;
 	int height;
 	Tile[] tiles;
+	ArrayList<TileStructure> tileStructures;
 
 	SplitType splitType = SplitType.DEFAULT;
 	ArrayList<Integer> deletedIndexes;
+	private ArrayDeque<Integer> queue;
 
 	public Grid (int width, int height, EntityManager entityManager) {
 		super(entityManager);
@@ -44,12 +46,14 @@ public class Grid extends Entity {
 		heightAABB = height * tileSize;
 		area = 0;
 		tiles = new Tile[width * height];
+		tileStructures = new ArrayList<TileStructure>();
 		for (int i = 0; i < this.tiles.length; i++) {
 			Tile tile = new Tile(this, TilePrefab.empty);
 			tiles[i] = tile;
 		}
 		density = mass / area;
 		deletedIndexes = new ArrayList<Integer>(width * height);
+		queue = new ArrayDeque<Integer>();
 
 		entityType = EntityType.GRID;
 	}
@@ -95,6 +99,10 @@ public class Grid extends Entity {
 		}
 	}
 
+	public Vector2 snapPos (Vector2 pos) {
+		return pos.sub(Util.mod(pos.x - this.pos.x, tileSize), Util.mod(pos.y - this.pos.y, tileSize));
+	}
+
 	public Vector2 indexToPos (int index) {
 		return new Vector2(pos.x + tileSize * (index % width), pos.y + tileSize * (index / width));
 	}
@@ -120,6 +128,16 @@ public class Grid extends Entity {
 		return Math.min(width - 1, x) + Math.min(height - 1, y) * width;
 	}
 
+	public boolean isIndexConnected (int index) {
+		for (int[] neighbour : neighbours) {
+			int indexOther = this.translateIndex(index, neighbour[0], neighbour[1]);
+			if (indexOther != -1 && tiles[indexOther].health > 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void setTileHealth (int index, float newHealth) {
 		float oldHealth = tiles[index].health;
 		tiles[index].setHealth(newHealth);
@@ -139,8 +157,8 @@ public class Grid extends Entity {
 	public void split () {
 		if ((splitType == SplitType.ATOMIC) || deletedIndexes.size() <= 0) return;
 
+		queue.clear();
 		int[] tileRegion = new int[tiles.length]; for (int i = 0; i < tiles.length; i++) { tileRegion[i] = -1; }
-		ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
 		int regionCount = deletedIndexes.size() * neighbours.length;
 		int[] regionMap = new int[regionCount]; for (int i = 0; i < regionMap.length; i++) { regionMap[i] = i; }
 		float[] regionSortMetric = new float[regionCount]; // currently is the # of tiles, but could be changed to use the cumulative mass, "control points" or "material cost"
@@ -152,9 +170,11 @@ public class Grid extends Entity {
 			int index = translateIndex(indexDeleted, neighbour[0], neighbour[1]);
 			if (index != -1 && tiles[index].health > 0) {
 				if (tileRegion[index] != -1) {
-					int changed = regionMap[tileRegion[index]];
-					for (int i = 0; i < regionMap.length; i++) {
-						if (regionMap[i] == changed) regionMap[i] = regionMap[region];
+					if (regionMap[tileRegion[index]] != regionMap[region]) {
+						int changed = regionMap[tileRegion[index]];
+						for (int i = 0; i < regionMap.length; i++) {
+							if (regionMap[i] == changed) regionMap[i] = regionMap[region];
+						}
 					}
 				} else {
 					queue.addLast(index);
@@ -173,7 +193,7 @@ public class Grid extends Entity {
 		}
 		int[] deletedIndexesTemp = new int[deletedIndexes.size()]; for (int i = 0; i < deletedIndexes.size(); i++) { deletedIndexesTemp[i] = deletedIndexes.get(i); }
 		deletedIndexes.clear();
-		
+
 		while (queue.size() > 0) {
 			int indexDeleted = queue.pop();
 			int region = tileRegion[indexDeleted];
@@ -181,10 +201,12 @@ public class Grid extends Entity {
 				int index = translateIndex(indexDeleted, neighbour[0], neighbour[1]);
 				if (index != -1 && tiles[index].health > 0) {
 					if (tileRegion[index] != -1) {
-						int changed = regionMap[tileRegion[index]];
-						for (int i = 0; i < regionMap.length; i++) {
-							if (regionMap[i] == changed) {
-								regionMap[i] = regionMap[region];
+						if (regionMap[tileRegion[index]] != regionMap[region]) {
+							int changed = regionMap[tileRegion[index]];
+							for (int i = 0; i < regionMap.length; i++) {
+								if (regionMap[i] == changed) {
+									regionMap[i] = regionMap[region];
+								}
 							}
 						}
 					} else {
@@ -336,10 +358,7 @@ public class Grid extends Entity {
 
 	public boolean isTouchingGrid (Grid grid) {
 		if (!this.isTouchingAABB(grid)) { return false; }
-
-		if (grid.tiles.length < tiles.length) {
-			return grid.isTouchingGrid(this);
-		}
+		if (grid.tiles.length < tiles.length) return grid.isTouchingGrid(this);
 
 		for (int i = 0; i < tiles.length; i++) {
 			Tile tile = tiles[i];
@@ -360,7 +379,7 @@ public class Grid extends Entity {
 		if (removed) return null;
 
 		for (Entity entity : entities) {
-			if ((this != entity) && !entity.removed && this.isTouchingAABB(entity) && this.isTouchingEntity(entity)) {
+			if ((this != entity) && !entity.removed && this.isTouchingEntity(entity)) {
 				return entity;
 			}
 		}
@@ -371,7 +390,7 @@ public class Grid extends Entity {
 		if (removed) return null;
 
 		for (Grid grid : grids) {
-			if ((this != grid) && !grid.removed && this.isTouchingAABB(grid) && this.isTouchingGrid(grid)) {
+			if ((this != grid) && !grid.removed && this.isTouchingGrid(grid)) {
 				return grid;
 			}
 		}
@@ -380,7 +399,7 @@ public class Grid extends Entity {
 
 	public void update (float dt) {
 		if (removed) return;
-		
+
 		super.update(dt);
 
 		this.split();

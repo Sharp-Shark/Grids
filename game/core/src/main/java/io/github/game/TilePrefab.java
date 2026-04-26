@@ -30,7 +30,7 @@ public class TilePrefab {
         1f,
         0f,
         true,
-        new Color(Color.BLUE).mul(1, 1, 1, 0.5f),
+        Color.NAVY,
         false
     );
     final static TilePrefab light = new TilePrefab(
@@ -51,10 +51,11 @@ public class TilePrefab {
         Color.BROWN,
         false
     );
-    static ArrayList<TilePrefab> tilePrefabList;
-    static HashMap<String, TilePrefab> tilePrefabMap;
+    
+    static ArrayList<TilePrefab> prefabList;
+    static HashMap<String, TilePrefab> prefabMap;
 
-    String identifier;
+    String name;
     float minHealth;
     float maxHealth;
     float mass;
@@ -63,8 +64,8 @@ public class TilePrefab {
     Color color;
     boolean noDraw;
 
-    public TilePrefab (String identifier, float minHealth, float maxHealth, float mass, boolean noCollision, Color color, boolean noDraw) {
-        this.identifier = identifier;
+    public TilePrefab (String name, float minHealth, float maxHealth, float mass, boolean noCollision, Color color, boolean noDraw) {
+        this.name = name;
         this.minHealth = minHealth;
         this.maxHealth = maxHealth;
         this.mass = mass;
@@ -73,9 +74,9 @@ public class TilePrefab {
         this.color = color;
         this.noDraw = noDraw;
 
-        if (tilePrefabList == null) { tilePrefabList = new ArrayList<TilePrefab>(); }
-        if (tilePrefabMap == null) { tilePrefabMap = new HashMap<String, TilePrefab>(); }
-        tilePrefabList.add(this);
-        tilePrefabMap.put(identifier, this);
+        if (prefabList == null) { prefabList = new ArrayList<TilePrefab>(); }
+        if (prefabMap == null) { prefabMap = new HashMap<String, TilePrefab>(); }
+        prefabList.add(this);
+        prefabMap.put(name, this);
     }
 }
