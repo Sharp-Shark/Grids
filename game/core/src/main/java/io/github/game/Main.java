@@ -117,6 +117,7 @@ public class Main implements ApplicationListener {
                     entity = entityManager.entities.get(i);
                     if (entity.removed || !entity.isTouchingPoint(cursorPos)) continue;
                     selectedIndex = i;
+                    break;
                 }
             }
         }
@@ -151,8 +152,6 @@ public class Main implements ApplicationListener {
                             grid.setTilePrefab(index, TilePrefab.background, true);
                         } else if (Gdx.input.isKeyPressed(Input.Keys.N)) {
                             grid.setTilePrefab(index, TilePrefab.light, true);
-                        } else if (Gdx.input.isKeyPressed(Input.Keys.M)) {
-                            grid.setTilePrefab(index, TilePrefab.earth, true);
                         }
                         if (damage < 0) {
                             grid.setTileHealth(index, grid.tiles[index].health - damage);
@@ -165,14 +164,15 @@ public class Main implements ApplicationListener {
                         grid.setTileHealth(index, grid.tiles[index].health - damage);
                     }
                 }
-                /*
-                if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
-                    System.out.println("MERGE");
-                    for (Grid gridOther : entityManager.grids) {
-                        grid.merge(new Grid[]{gridOther});
+                if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+                    Entity other;
+                    for (int i = 0; i < entityManager.entities.size(); i++) {
+                        other = entityManager.entities.get(i);
+                        if (other.removed || other.entityType != Entity.EntityType.GRID || !other.isTouchingPoint(cursorPos)) continue;
+                        grid.merge(new Grid[]{(Grid) other});
+                        break;
                     }
                 }
-                */
             }
         }
 
@@ -212,7 +212,7 @@ public class Main implements ApplicationListener {
         }
 
         font.getData().setScale(0.04f);
-        font.draw(spriteBatch, "Controls: [Q][E] [W][A][S][D] [Z][X] [C][V][B][N][M] [LMB] [RMB] [Arrows]", -6f, -1f);
+        font.draw(spriteBatch, "Controls: [Q][E] [W][A][S][D] [Z][X][M] [C][V][B][N] [LMB] [RMB] [Arrows]", -6f, -1f);
 
         spriteBatch.setProjectionMatrix(viewportGUI.getCamera().combined);
         font.getData().setScale(0.05f);

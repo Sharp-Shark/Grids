@@ -1,6 +1,7 @@
 package io.github.game;
 
 import java.lang.Math;
+import java.time.Year;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 
@@ -155,7 +156,7 @@ public class Grid extends Entity {
 	}
 
 	public void split () {
-		if ((splitType == SplitType.ATOMIC) || deletedIndexes.size() <= 0) return;
+		if (removed || (splitType == SplitType.ATOMIC) || deletedIndexes.size() <= 0) return;
 
 		queue.clear();
 		int[] tileRegion = new int[tiles.length]; for (int i = 0; i < tiles.length; i++) { tileRegion[i] = -1; }
@@ -328,9 +329,40 @@ public class Grid extends Entity {
 	}
 
 	public void merge (Grid[] grids) {
-		// to be done: makes a new grid with the tiles of all the other grids and delete the other grids
-		// if I ever add grid resizing, instead it could pick the biggest grid, resize that so all the other grids fit
-		// and then add the tiles from the other grids and finally delete the other grids
+		int[] rect = {0, 0, width, height};
+		for (Grid grid : grids) {
+			if (grid.removed || grid == this) continue;
+
+			int x = Math.round((grid.pos.x - pos.x) / tileSize);
+			int y = Math.round((grid.pos.y - pos.y) / tileSize);
+			grid.pos.x = pos.x + x * tileSize;
+			grid.pos.y = pos.y + y * tileSize;
+			rect[0] = Math.min(x, rect[0]);
+			rect[1] = Math.min(y, rect[1]);
+			rect[2] = Math.max(x + grid.width, rect[2]);
+			rect[3] = Math.max(y + grid.height, rect[3]);
+		}
+		this.resize(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+
+		for (Grid grid : grids) {
+			if (grid.removed || grid == this) continue;
+
+			Tile tile;
+			int x = Math.round((grid.pos.x - pos.x) / tileSize);
+			int y = Math.round((grid.pos.y - pos.y) / tileSize);
+			for (int index = 0; index < grid.tiles.length; index++) {
+				tile = grid.tiles[index];
+				if (tile.health > 0) {
+					int indexMapped = index % grid.width + x + (index / grid.width + y) * width;
+					if (tiles[indexMapped].prefab == TilePrefab.empty || (!tile.isNoCollision() && tiles[indexMapped].isNoCollision())) {
+						tiles[indexMapped] = tile;
+						tile.setGrid(this);
+					}
+				}
+			}
+			this.immobile |= grid.immobile;
+			grid.removed = true; 
+		}
 	}
 
 	public boolean isTouchingPoint (Vector2 point) {
