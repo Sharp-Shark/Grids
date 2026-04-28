@@ -329,9 +329,12 @@ public class Grid extends Entity {
 	}
 
 	public void merge (Grid[] grids) {
+		float totalMass = this.mass;
 		int[] rect = {0, 0, width, height};
 		for (Grid grid : grids) {
 			if (grid.removed || grid == this) continue;
+			
+			totalMass += grid.mass;
 
 			int x = Math.round((grid.pos.x - pos.x) / tileSize);
 			int y = Math.round((grid.pos.y - pos.y) / tileSize);
@@ -342,10 +345,17 @@ public class Grid extends Entity {
 			rect[2] = Math.max(x + grid.width, rect[2]);
 			rect[3] = Math.max(y + grid.height, rect[3]);
 		}
+		vel.scl(mass / totalMass);
 		this.resize(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
 
 		for (Grid grid : grids) {
 			if (grid.removed || grid == this) continue;
+
+			if (grid.immobile) {
+				this.immobile = true;
+			} else {
+				vel.add(grid.vel.scl(grid.mass / totalMass));
+			}
 
 			Tile tile;
 			int x = Math.round((grid.pos.x - pos.x) / tileSize);
@@ -360,7 +370,6 @@ public class Grid extends Entity {
 					}
 				}
 			}
-			this.immobile |= grid.immobile;
 			grid.removed = true; 
 		}
 	}
@@ -464,6 +473,6 @@ public class Grid extends Entity {
 			drawPos.y += tileSize;
 		}
 
-		//font.draw(sb, String.valueOf(density), pos.x, pos.y);
+		//font.draw(sb, String.valueOf(vel.len()), pos.x, pos.y);
 	}
 }

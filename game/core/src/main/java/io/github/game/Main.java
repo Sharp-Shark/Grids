@@ -180,9 +180,17 @@ public class Main implements ApplicationListener {
     }
     
     private void update (float dt) {
-        entityManager.update(dt);
+        if (selectedIndex != -1) {
+            if (entityManager.entities.get(selectedIndex).removed) {
+                selectedIndex = -1;
+            } else {
+                for (int index = 0; index < selectedIndex; index++) {
+                    if (entityManager.entities.get(index).removed) selectedIndex -= 1;
+                }
+            }
+        }
 
-        if (selectedIndex != -1 && entityManager.entities.get(selectedIndex).removed) { selectedIndex = -1; }
+        entityManager.update(dt);
     }
 
     private void draw (float dt) {
